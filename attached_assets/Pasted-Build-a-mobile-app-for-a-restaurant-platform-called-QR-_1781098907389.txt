@@ -1,0 +1,138 @@
+Build a mobile app for a restaurant platform called "QR App" using Expo (React Native) with TypeScript. This app lets diners scan QR codes at restaurant tables, browse menus, place orders, pay, make reservations, earn points, and leave reviews.
+
+TECH STACK:
+- Expo SDK (latest) with TypeScript
+- Expo Router (file-based routing)
+- Zustand for state management
+- Axios for API calls (or fetch)
+- expo-secure-store for token storage
+- expo-camera for QR scanning (will be used in next prompt)
+
+PROJECT STRUCTURE:
+/src/
+  app/                    → Expo Router pages (file-based routing)
+    (auth)/               → Auth group (not shown to logged-in users)
+      login.tsx
+      register.tsx
+      onboarding.tsx
+    (tabs)/               → Main tab navigation (shown after auth)
+      index.tsx           → Home screen
+      search.tsx          → Search restaurants
+      orders.tsx          → My orders
+      profile.tsx         → Profile
+    _layout.tsx           → Root layout with auth check
+  components/             → Reusable components
+    ui/                   → Basic UI components (Button, Input, Card, etc.)
+    restaurant/           → Restaurant-related components
+  services/
+    api.ts                → Axios instance with base URL and auth interceptor
+    auth.ts               → Auth API calls (register, login, social, me)
+    restaurants.ts        → Restaurant/branch API calls
+  stores/
+    authStore.ts          → Zustand store for auth state (user, token, isAuthenticated, isGuest)
+    sessionStore.ts       → Zustand store for table session state (will be used later)
+  types/
+    index.ts              → TypeScript interfaces (User, Restaurant, Branch, Product, etc.)
+  constants/
+    theme.ts              → Colors, fonts, spacing, border radius
+    config.ts             → API_BASE_URL from env
+
+ENVIRONMENT VARIABLE:
+- API_BASE_URL → The backend URL (will be set in Secrets)
+
+DESIGN SYSTEM:
+- Primary color: #FF6B35 (warm orange)
+- Secondary color: #2D3436 (dark gray)
+- Background: #FFFFFF
+- Card background: #F8F9FA
+- Text primary: #2D3436
+- Text secondary: #636E72
+- Success: #00B894
+- Error: #FF7675
+- Border radius: 12px for cards, 8px for buttons, 24px for pills
+- Font: system default
+- All text in Spanish (Paraguay)
+
+SCREENS TO BUILD:
+
+1. ROOT LAYOUT (_layout.tsx):
+- Check if user has token in SecureStore on app load
+- If token exists: validate with GET /api/v1/auth/me, if valid go to tabs, if invalid go to auth
+- If no token: show auth screens
+- Persistent session (stay logged in until manual logout)
+- Splash/loading screen while checking auth
+
+2. LOGIN SCREEN (login.tsx):
+- Email + password fields
+- "Iniciar sesión" button
+- "Registrarte" link → navigate to register
+- "Continuar como invitado" link → set isGuest = true in store, navigate to tabs (limited access)
+- Calls POST /api/v1/auth/login
+- On success: store token in SecureStore, store user in Zustand, navigate to tabs
+- If response has needs_terms_acceptance: show terms modal before proceeding
+- Error handling with user-friendly messages in Spanish
+
+3. REGISTER SCREEN (register.tsx):
+- Full name, email, password, confirm password fields
+- "Crear cuenta" button
+- Calls POST /api/v1/auth/register
+- On success: navigate to onboarding screen
+- Validation: email format, password min 8 chars, passwords match
+
+4. ONBOARDING SCREEN (onboarding.tsx):
+- Step 1: Tutorial carousel (3-4 swipeable screens explaining: QR scanning, ordering, points, payments). Show skip button.
+- Step 2: "Restricciones alimentarias" → multiselect chips (fetch from API or hardcode: Celíaco, Vegetariano, Vegano, Intolerante a la lactosa, Alérgico a frutos secos, Alérgico al marisco, Diabético, Sin restricciones)
+- Step 3: "Cocinas favoritas" → multiselect chips (Paraguaya, Argentina, Brasileña, Italiana, Japonesa, China, Mexicana, Peruana, Americana, Española, Francesa, Árabe)
+- Step 4: "¿Con qué frecuencia comés en restaurantes?" → single select (Raramente, Una vez al mes, Una vez por semana, Varias veces por semana)
+- "Completar" button → save preferences via PATCH /api/v1/auth/me, award 50 points message, navigate to home
+
+5. HOME SCREEN (tabs/index.tsx):
+- Header: "Hola, {user.full_name}" (or "Hola!" for guests)
+- Prominent "Escanear QR" button (large, centered, primary color) — navigation placeholder for now
+- "Pedir anticipadamente" button below — navigation placeholder for now
+- Section: "Promociones destacadas" → horizontal scrollable cards (placeholder data for now)
+- Section: "Restaurantes cerca tuyo" → vertical list of restaurant cards (placeholder data for now)
+- Each restaurant card: image, name, cuisine type, rating stars, distance
+- If guest: tapping promotions shows "Iniciá sesión para acceder" modal
+
+6. SEARCH SCREEN (tabs/search.tsx):
+- Search bar at top
+- Filter chips: cuisine types
+- Results: restaurant cards
+- Placeholder for now (will connect to API later)
+
+7. ORDERS SCREEN (tabs/orders.tsx):
+- "Pedidos activos" section (empty state for now)
+- "Historial" section (empty state for now)
+- If guest: show "Iniciá sesión para ver tus pedidos"
+
+8. PROFILE SCREEN (tabs/profile.tsx):
+- If authenticated: show user photo, name, email, points balance
+- Sections as tappable rows: "Mis datos", "Métodos de pago", "Mis favoritos", "Puntos y recompensas", "Reservas", "Configuración", "Soporte", "Cerrar sesión"
+- Each row navigates to placeholder screen
+- If guest: show "Iniciá sesión" prompt with register/login buttons
+- "Cerrar sesión" clears token from SecureStore, clears Zustand store, navigates to login
+
+TAB BAR:
+- 4 tabs: Inicio (home icon), Buscar (search icon), Pedidos (receipt/order icon), Perfil (person icon)
+- Active tab color: #FF6B35
+- Inactive: #636E72
+
+API SERVICE (services/api.ts):
+- Create Axios instance with baseURL from config
+- Request interceptor: attach Bearer token from SecureStore if exists
+- Response interceptor: if 401, clear token and redirect to login
+- Helper functions: get, post, patch, delete with typed responses
+
+AUTH STORE (stores/authStore.ts):
+- State: user (User | null), token (string | null), isAuthenticated (boolean), isGuest (boolean), isLoading (boolean)
+- Actions: login, register, logout, setGuest, checkAuth, updateProfile
+
+RULES:
+- All UI text in Spanish
+- Clean, modern design with the color palette above
+- Smooth transitions between screens
+- Loading states on all buttons that make API calls
+- Error toasts/alerts in Spanish
+- Use React Native safe area handling
+- No placeholder images — use colored backgrounds with icons where images would go
