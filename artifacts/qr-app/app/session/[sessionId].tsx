@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -21,7 +22,9 @@ import { menuService } from "@/services/menu";
 import { getErrorMessage } from "@/services/api";
 import { MenuView } from "@/components/MenuView";
 import { Button } from "@/components/ui/Button";
-import { MenuProduct, WaiterReason } from "@/types";
+import { OrdersTab, OrdersTabHandle } from "@/components/session/OrdersTab";
+import { BillTab, BillTabHandle } from "@/components/session/BillTab";
+import { MenuProduct, Order, WaiterReason } from "@/types";
 
 type Tab = "menu" | "orders" | "bill";
 
@@ -47,7 +50,6 @@ export default function SessionScreen() {
   const session = useSessionStore((s) => s.session);
   const menu = useSessionStore((s) => s.menu);
   const currentTimeSlot = useSessionStore((s) => s.currentTimeSlot);
-  const orders = useSessionStore((s) => s.orders);
   const setSession = useSessionStore((s) => s.setSession);
   const setMenu = useSessionStore((s) => s.setMenu);
   const setCurrentTimeSlot = useSessionStore((s) => s.setCurrentTimeSlot);
@@ -66,6 +68,25 @@ export default function SessionScreen() {
   const [customReason, setCustomReason] = useState("");
   const [callingWaiter, setCallingWaiter] = useState(false);
   const [waiterSent, setWaiterSent] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const ordersTabRef = useRef<OrdersTabHandle>(null);
+  const billTabRef = useRef<BillTabHandle>(null);
+
+  const handleSelectOrder = (order: Order) => {
+    router.push(`/order/${order.id}`);
+  };
+
+  const handleRefresh = async () => {
+    if (tab === "menu") return;
+    setRefreshing(true);
+    try {
+      if (tab === "orders") await ordersTabRef.current?.refresh();
+      if (tab === "bill") await billTabRef.current?.refresh();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     if (sessionId) ensureSession(sessionId);
@@ -269,6 +290,16 @@ export default function SessionScreen() {
           { paddingBottom: insets.bottom + 110 },
         ]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          tab === "menu" ? undefined : (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
+            />
+          )
+        }
       >
         {tab === "menu" ? (
           <MenuView
@@ -281,29 +312,32 @@ export default function SessionScreen() {
         ) : null}
 
         {tab === "orders" ? (
-          <View style={styles.placeholder}>
-            <Feather name="clipboard" size={44} color={colors.border} />
-            <Text style={[styles.placeholderTitle, { color: colors.foreground }]}>
-              {orders.length > 0 ? "Pedidos de la mesa" : "Sin pedidos todavía"}
-            </Text>
-            <Text style={[styles.placeholderDesc, { color: colors.mutedForeground }]}>
-              {orders.length > 0
-                ? `${orders.length} pedido(s) en curso`
-                : "Agregá productos del menú para hacer tu primer pedido"}
-            </Text>
-          </View>
+          <OrdersTab
+            ref={ordersTabRef}
+            sessionId={session.id}
+            onSelectOrder={handleSelectOrder}
+          />
         ) : null}
 
         {tab === "bill" ? (
-          <View style={styles.placeholder}>
-            <Feather name="file-text" size={44} color={colors.border} />
-            <Text style={[styles.placeholderTitle, { color: colors.foreground }]}>
-              Cuenta de la mesa
-            </Text>
-            <Text style={[styles.placeholderDesc, { color: colors.mutedForeground }]}>
-              Acá vas a ver el resumen de la cuenta cuando tengas pedidos
-            </Text>
-          </View>
+          <BillTab
+            ref={billTabRef}
+            session={session}
+            onPaid={(payment) =>
+              router.replace({
+                pathname: "/payment-success",
+                params: {
+                  amount: String(payment.amount),
+                  receipt: payment.receipt_number ?? "",
+                  tip: String(payment.tip ?? 0),
+                  discount: String(payment.discount ?? 0),
+                  method: payment.method,
+                  sessionPaid: payment.session_paid ? "1" : "0",
+                },
+              })
+            }
+            onOpenSplit={() => router.push("/split")}
+          />
         ) : null}
       </ScrollView>
 

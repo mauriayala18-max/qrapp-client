@@ -19,6 +19,7 @@ export interface Branch {
   latitude?: number;
   longitude?: number;
   phone?: string;
+  payment_methods?: string[];
 }
 
 export interface Restaurant {
@@ -44,6 +45,7 @@ export interface Product {
   image?: string;
   available: boolean;
   allergens?: string[];
+  prep_time_minutes?: number;
 }
 
 export interface OrderItem {
@@ -139,6 +141,7 @@ export interface Session {
   participants: SessionParticipant[];
   current_time_slot?: TimeSlot;
   created_at?: string;
+  orders?: Order[];
 }
 
 export interface WaiterReason {
@@ -220,4 +223,61 @@ export interface CartItem {
 export interface ScanResponse {
   session: Session;
   menu?: Menu;
+}
+
+export type PaymentMethod = "card" | "apple_pay" | "google_pay" | "cash" | "pos";
+
+export interface BankingBenefit {
+  id: string;
+  bank_name: string;
+  card_label?: string;
+  discount_percentage?: number;
+  discount_amount?: number;
+  description?: string;
+}
+
+export interface PaymentInput {
+  session_id: string;
+  amount: number;
+  method: PaymentMethod;
+  tip?: number;
+  benefit_id?: string;
+  split_id?: string;
+}
+
+export interface Payment {
+  id: string;
+  amount: number;
+  method: PaymentMethod;
+  status: string;
+  receipt_number?: string;
+  tip?: number;
+  discount?: number;
+  created_at?: string;
+  session_paid?: boolean;
+}
+
+export interface SplitItem {
+  id: string;
+  product_name: string;
+  category?: string;
+  price: number;
+  quantity?: number;
+  claimed_by?: string | null;
+  shared?: boolean;
+}
+
+export interface Split {
+  id: string;
+  method: "equal" | "items" | "custom";
+  participants_count?: number;
+  amount_per_person?: number;
+  items?: SplitItem[];
+  status?: string;
+  total?: number;
+}
+
+export interface PaymentLink {
+  url: string;
+  amount?: number;
 }

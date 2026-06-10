@@ -1,0 +1,119 @@
+Add order confirmation, order tracking, and payment functionality to the existing QR App. Do NOT modify or recreate existing files unless adding imports or navigation. Build on existing stores, services, theme, and components.
+
+All API endpoints already exist in the backend.
+
+NEW SERVICES (src/services/):
+
+orders.ts:
+- createOrder(sessionId, items, notes?) → POST /api/v1/orders
+- getOrder(orderId) → GET /api/v1/orders/:orderId
+- getSessionOrders(sessionId) → GET /api/v1/sessions/:sessionId (already returns orders)
+- cancelOrder(orderId, reason?, itemId?) → POST /api/v1/orders/:orderId/cancel
+- getBranchActiveOrders(branchId) → GET /api/v1/branches/:branchId/orders/active
+
+payments.ts:
+- createPayment(data) → POST /api/v1/payments
+- getSessionPayments(sessionId) → GET /api/v1/sessions/:sessionId/payments
+- createSplit(sessionId, method, participantsCount) → POST /api/v1/sessions/:sessionId/split
+- claimItems(splitId, items) → POST /api/v1/splits/:splitId/claim
+- getSplit(splitId) → GET /api/v1/splits/:splitId
+- createPaymentLink(sessionId, amount) → POST /api/v1/sessions/:sessionId/payment-link
+- getBankingBenefits(branchId) → GET /api/v1/branches/:branchId/banking-benefits
+
+SCREENS TO BUILD/UPDATE:
+
+1. UPDATE CART SCREEN (src/app/cart.tsx):
+- Show cart items with product name, quantity, modifications, notes, individual total
+- Quantity stepper (can increase, decrease, remove if 0)
+- Swipe to delete item
+- Order summary at bottom: subtotal, item count
+- "Observaciones generales" text input for order-level notes
+- "Confirmar pedido" button → calls createOrder API
+- On success: clear cart, navigate to order confirmation, show success animation/toast
+- On error: show error message in Spanish
+- If cart is empty: show empty state "Tu pedido está vacío" with button "Ver menú"
+
+2. ORDER CONFIRMATION SCREEN (src/app/order/[orderId].tsx):
+- Success animation (checkmark) at top
+- "¡Pedido confirmado!" title
+- Order number
+- List of items ordered
+- Estimated time (sum of max prep times)
+- Live status indicator: Recibido → En preparación → Listo
+- Auto-refresh status every 10 seconds (or use polling)
+- When status changes: show notification/toast
+- "Volver al menú" button
+- "Ver todos mis pedidos" link
+
+3. UPDATE SESSION "Pedidos" TAB:
+- Show all orders in current session grouped by status
+- Active orders (received, in_preparation): show with pulsing status indicator
+- Ready orders: show with green checkmark
+- Delivered orders: show with gray checkmark
+- Each order shows: items list, total, status, time since ordered
+- Tappable → navigate to order detail
+- Pull to refresh
+- Empty state: "Aún no hiciste ningún pedido"
+
+4. UPDATE SESSION "Cuenta" TAB:
+- Bill summary: list all orders with items and prices
+- Subtotal
+- Section: "Propina" with suggested percentages (5%, 10%, 15%) as tappable chips + "Otro monto" option
+- Section: "Método de pago" with options based on branch payment methods:
+  - "Tarjeta" (card icon)
+  - "Apple Pay" (if available)
+  - "Google Pay" (if available)
+  - "Efectivo" (cash icon) — shows message "Un mozo procesará tu pago"
+  - "POS" — shows message "Un mozo traerá el POS"
+- Section: "Beneficios bancarios" — if user has saved cards, show applicable benefits with discount amount
+- "Dividir cuenta" button → opens split flow
+- Total to pay (with discount if benefit applied)
+- "Pagar {total} Gs." button
+- On success: show payment confirmation with receipt number
+
+5. SPLIT FLOW (src/app/split.tsx):
+- Three options presented as cards:
+  - "Partes iguales" — select number of people, shows amount per person
+  - "Yo elijo lo mío" — shows all order items organized by section (bebidas, comida, postres, otro), each item tappable to claim with user's name, already claimed items show who claimed them, shared items option
+  - "Monto personalizado" — input custom amount to pay
+- After selecting method: show individual payment button with calculated amount
+- "Compartir link de pago" button for non-connected diners → generates payment link, shows share sheet
+
+6. PAYMENT CONFIRMATION (src/app/payment-success.tsx):
+- Success animation
+- "¡Pago confirmado!"
+- Amount paid
+- Receipt number
+- Discount applied (if any)
+- Tip amount
+- "Ver recibo" button
+- "Volver" button
+- If session fully paid: show "Cuenta completada" message
+
+7. UPDATE ORDERS TAB (tabs/orders.tsx):
+- "Pedidos activos" section: show current active orders with live status
+- "Historial" section: past orders grouped by date
+- Each order card: restaurant name, date, items count, total, status
+- Tappable → navigate to order detail
+- Pull to refresh
+- Empty state with illustration
+
+PRICE FORMATTING:
+- Use the existing formatPrice utility
+- All amounts in Guaraníes as integers, display with dots: "25.000 Gs."
+- Tips calculated on subtotal before discounts
+
+ORDER STATUS COLORS:
+- Recibido: orange (#FF6B35)
+- En preparación: blue (#0984E3)
+- Listo: green (#00B894)
+- Entregado: gray (#636E72)
+- Cancelado: red (#FF7675)
+
+RULES:
+- All text in Spanish
+- Follow existing theme and component patterns
+- Loading states on all API calls
+- Error handling with Spanish messages
+- Smooth transitions between screens
+- Cart badge updates in real-time on session screen

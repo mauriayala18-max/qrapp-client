@@ -1,18 +1,26 @@
-import React from "react";
+import React, { useState } from "react";
 import {
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Swipeable } from "react-native-gesture-handler";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
 import { useCartStore } from "@/stores/cartStore";
+import { useSessionStore } from "@/stores/sessionStore";
+import { orderService } from "@/services/orders";
+import { getErrorMessage } from "@/services/api";
 import { Button } from "@/components/ui/Button";
 import { formatGs } from "@/utils/format";
+import { CartItem } from "@/types";
 
 export default function CartScreen() {
   const colors = useColors();
@@ -20,14 +28,113 @@ export default function CartScreen() {
   const router = useRouter();
 
   const items = useCartStore((s) => s.items);
-  const total = useCartStore((s) => s.getTotal());
+  const subtotal = useCartStore((s) => s.getTotal());
+  const count = useCartStore((s) => s.getCount());
   const removeItem = useCartStore((s) => s.removeItem);
   const updateQuantity = useCartStore((s) => s.updateQuantity);
+  const clearCart = useCartStore((s) => s.clearCart);
+
+  const session = useSessionStore((s) => s.session);
+  const addOrder = useSessionStore((s) => s.addOrder);
+
+  const [generalNotes, setGeneralNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const goBack = () => {
     if (router.canGoBack()) router.back();
     else router.replace("/(tabs)");
   };
+
+  const goToMenu = () => {
+    if (session) router.replace(`/session/${session.id}`);
+    else router.replace("/(tabs)");
+  };
+
+  const confirmOrder = async () => {
+    if (items.length === 0 || submitting) return;
+    if (!session) {
+      setError("No estás en una mesa activa. Escaneá el QR de tu mesa.");
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      const order = await orderService.createOrder(
+        session.id,
+        items,
+        generalNotes.trim() || undefined,
+      );
+      addOrder(order);
+      clearCart();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.replace(`/order/${order.id}`);
+    } catch (e) {
+      setError(getErrorMessage(e));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const renderDeleteAction = (itemId: string) => (
+    <Pressable
+      onPress={() => removeItem(itemId)}
+      style={[styles.deleteAction, { backgroundColor: colors.destructive }]}
+    >
+      <Feather name="trash-2" size={22} color="#FFFFFF" />
+    </Pressable>
+  );
+
+  const renderItem = (item: CartItem) => (
+    <Swipeable
+      key={item.id}
+      renderRightActions={() => renderDeleteAction(item.id)}
+      overshootRight={false}
+    >
+      <View style={[styles.item, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+        <View style={styles.itemTop}>
+          <Text style={[styles.itemName, { color: colors.foreground }]}>
+            {item.product.name}
+          </Text>
+          <Pressable onPress={() => removeItem(item.id)} hitSlop={8}>
+            <Feather name="trash-2" size={18} color={colors.mutedForeground} />
+          </Pressable>
+        </View>
+        {item.modifications.length > 0 ? (
+          <Text style={[styles.itemMods, { color: colors.mutedForeground }]}>
+            {item.modifications.map((m) => m.option_name).join(", ")}
+          </Text>
+        ) : null}
+        {item.notes ? (
+          <Text style={[styles.itemNotes, { color: colors.mutedForeground }]}>
+            "{item.notes}"
+          </Text>
+        ) : null}
+        <View style={styles.itemBottom}>
+          <View style={styles.qtyControl}>
+            <Pressable
+              onPress={() => updateQuantity(item.id, item.quantity - 1)}
+              style={[styles.qtyBtn, { borderColor: colors.border }]}
+            >
+              <Feather name="minus" size={16} color={colors.foreground} />
+            </Pressable>
+            <Text style={[styles.qtyValue, { color: colors.foreground }]}>
+              {item.quantity}
+            </Text>
+            <Pressable
+              onPress={() => updateQuantity(item.id, item.quantity + 1)}
+              style={[styles.qtyBtn, { borderColor: colors.border }]}
+            >
+              <Feather name="plus" size={16} color={colors.foreground} />
+            </Pressable>
+          </View>
+          <Text style={[styles.itemPrice, { color: colors.primary }]}>
+            {formatGs(item.totalPrice)}
+          </Text>
+        </View>
+      </View>
+    </Swipeable>
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -53,60 +160,50 @@ export default function CartScreen() {
           <Text style={[styles.emptyDesc, { color: colors.mutedForeground }]}>
             Agregá productos del menú para empezar
           </Text>
+          <Button title="Ver menú" onPress={goToMenu} style={{ marginTop: 8 }} />
         </View>
       ) : (
         <>
           <ScrollView
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
-            {items.map((item) => (
-              <View
-                key={item.id}
-                style={[styles.item, { borderBottomColor: colors.border }]}
-              >
-                <View style={styles.itemTop}>
-                  <Text style={[styles.itemName, { color: colors.foreground }]}>
-                    {item.product.name}
-                  </Text>
-                  <Pressable onPress={() => removeItem(item.id)} hitSlop={8}>
-                    <Feather name="trash-2" size={18} color={colors.mutedForeground} />
-                  </Pressable>
-                </View>
-                {item.modifications.length > 0 ? (
-                  <Text style={[styles.itemMods, { color: colors.mutedForeground }]}>
-                    {item.modifications.map((m) => m.option_name).join(", ")}
-                  </Text>
-                ) : null}
-                {item.notes ? (
-                  <Text style={[styles.itemNotes, { color: colors.mutedForeground }]}>
-                    "{item.notes}"
-                  </Text>
-                ) : null}
-                <View style={styles.itemBottom}>
-                  <View style={styles.qtyControl}>
-                    <Pressable
-                      onPress={() => updateQuantity(item.id, item.quantity - 1)}
-                      style={[styles.qtyBtn, { borderColor: colors.border }]}
-                    >
-                      <Feather name="minus" size={16} color={colors.foreground} />
-                    </Pressable>
-                    <Text style={[styles.qtyValue, { color: colors.foreground }]}>
-                      {item.quantity}
-                    </Text>
-                    <Pressable
-                      onPress={() => updateQuantity(item.id, item.quantity + 1)}
-                      style={[styles.qtyBtn, { borderColor: colors.border }]}
-                    >
-                      <Feather name="plus" size={16} color={colors.foreground} />
-                    </Pressable>
-                  </View>
-                  <Text style={[styles.itemPrice, { color: colors.primary }]}>
-                    {formatGs(item.totalPrice)}
-                  </Text>
-                </View>
+            {items.map(renderItem)}
+
+            <View style={styles.notesWrap}>
+              <Text style={[styles.notesLabel, { color: colors.foreground }]}>
+                Observaciones generales
+              </Text>
+              <TextInput
+                style={[
+                  styles.notesInput,
+                  { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted },
+                ]}
+                placeholder="Ej: traer todo junto, sin picante..."
+                placeholderTextColor={colors.mutedForeground}
+                value={generalNotes}
+                onChangeText={setGeneralNotes}
+                multiline
+              />
+            </View>
+
+            <View style={[styles.summary, { borderColor: colors.border }]}>
+              <View style={styles.summaryRow}>
+                <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>
+                  {count} ítem{count !== 1 ? "s" : ""}
+                </Text>
+                <Text style={[styles.summaryValue, { color: colors.foreground }]}>
+                  {formatGs(subtotal)}
+                </Text>
               </View>
-            ))}
+            </View>
+
+            {error ? (
+              <Text style={[styles.errorText, { color: colors.destructive }]}>
+                {error}
+              </Text>
+            ) : null}
           </ScrollView>
 
           <View
@@ -124,10 +221,16 @@ export default function CartScreen() {
                 Total
               </Text>
               <Text style={[styles.totalValue, { color: colors.foreground }]}>
-                {formatGs(total)}
+                {formatGs(subtotal)}
               </Text>
             </View>
-            <Button title="Confirmar pedido (próximamente)" fullWidth disabled />
+            <Button
+              title={submitting ? "Confirmando..." : "Confirmar pedido"}
+              fullWidth
+              size="lg"
+              loading={submitting}
+              onPress={confirmOrder}
+            />
           </View>
         </>
       )}
@@ -155,7 +258,7 @@ const styles = StyleSheet.create({
   empty: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 32 },
   emptyTitle: { fontSize: 18, fontWeight: "700" },
   emptyDesc: { fontSize: 14, textAlign: "center" },
-  list: { padding: 16 },
+  list: { padding: 16, paddingBottom: 24 },
   item: {
     paddingVertical: 16,
     borderBottomWidth: 1,
@@ -186,6 +289,36 @@ const styles = StyleSheet.create({
   },
   qtyValue: { fontSize: 16, fontWeight: "700", minWidth: 20, textAlign: "center" },
   itemPrice: { fontSize: 16, fontWeight: "800" },
+  deleteAction: {
+    justifyContent: "center",
+    alignItems: "center",
+    width: 72,
+  },
+  notesWrap: { marginTop: 20, gap: 8 },
+  notesLabel: { fontSize: 15, fontWeight: "700" },
+  notesInput: {
+    borderWidth: 1.5,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 15,
+    minHeight: 70,
+    textAlignVertical: "top",
+  },
+  summary: {
+    marginTop: 20,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+  },
+  summaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  summaryLabel: { fontSize: 15 },
+  summaryValue: { fontSize: 15, fontWeight: "700" },
+  errorText: { fontSize: 13, marginTop: 14, textAlign: "center" },
   footer: {
     borderTopWidth: 1,
     paddingHorizontal: 20,

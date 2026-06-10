@@ -70,6 +70,12 @@ function RootLayoutNav() {
       <Stack.Screen name="product/[productId]" />
       <Stack.Screen name="reviews/[productId]" />
       <Stack.Screen name="cart" options={{ animation: "slide_from_bottom" }} />
+      <Stack.Screen name="order/[orderId]" />
+      <Stack.Screen name="split" options={{ animation: "slide_from_bottom" }} />
+      <Stack.Screen
+        name="payment-success"
+        options={{ animation: "slide_from_bottom", gestureEnabled: false }}
+      />
     </Stack>
   );
 }
