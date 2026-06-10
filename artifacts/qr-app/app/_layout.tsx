@@ -71,6 +71,17 @@ function RootLayoutNav() {
       <Stack.Screen name="reviews/[productId]" />
       <Stack.Screen name="cart" options={{ animation: "slide_from_bottom" }} />
       <Stack.Screen name="order/[orderId]" />
+      <Stack.Screen name="profile/edit" />
+      <Stack.Screen name="profile/payment-methods" />
+      <Stack.Screen name="profile/favorites" />
+      <Stack.Screen name="profile/points" />
+      <Stack.Screen name="profile/reservations" />
+      <Stack.Screen name="profile/settings" />
+      <Stack.Screen name="profile/notification-settings" />
+      <Stack.Screen name="profile/support" />
+      <Stack.Screen name="reservations/new" options={{ animation: "slide_from_bottom" }} />
+      <Stack.Screen name="rate" options={{ animation: "slide_from_bottom" }} />
+      <Stack.Screen name="notifications" />
       <Stack.Screen name="split" options={{ animation: "slide_from_bottom" }} />
       <Stack.Screen
         name="payment-success"

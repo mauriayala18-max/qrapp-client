@@ -1,0 +1,162 @@
+Add the remaining features to the QR App: Profile management, Favorites, Points/Rewards, Reservations, Ratings/Reviews, and Notifications. Do NOT modify or recreate existing files unless adding imports or navigation. Build on existing stores, services, theme, and components.
+
+All API endpoints already exist in the backend.
+
+NEW SERVICES (src/services/):
+
+profile.ts:
+- updateProfile(data) → PATCH /api/v1/auth/me
+- getUserFavorites() → (fetch from local or backend if endpoint exists)
+- addFavorite(type, id) → POST logic
+- removeFavorite(favoriteId) → DELETE logic
+
+points.ts:
+- getBalance() → GET /api/v1/points/balance
+- getHistory(page, type?) → GET /api/v1/points/history
+
+reservations.ts:
+- createReservation(data) → POST /api/v1/reservations
+- getMyReservations(params?) → GET /api/v1/reservations/mine
+- cancelReservation(id) → DELETE /api/v1/reservations/:id
+
+ratings.ts:
+- rateDish(productId, orderItemId, rating) → POST /api/v1/ratings/dish
+- writeDishReview(ratingId, reviewText) → POST /api/v1/ratings/dish/:ratingId/review
+- rateRestaurant(branchId, sessionId, rating) → POST /api/v1/ratings/restaurant
+
+notifications.ts:
+- getNotifications(page, unreadOnly?) → GET /api/v1/notifications
+- getUnreadCount() → GET /api/v1/notifications/unread-count
+- markAsRead(notificationId) → PATCH /api/v1/notifications/:notificationId/read
+- markAllRead() → POST /api/v1/notifications/read-all
+- getPreferences() → GET /api/v1/notifications/preferences
+- updatePreferences(prefs) → PATCH /api/v1/notifications/preferences
+
+SCREENS TO BUILD:
+
+1. PROFILE DETAIL SCREEN (src/app/profile/edit.tsx):
+- Editable fields: full name, phone, date of birth (date picker)
+- Profile photo display (from Gmail/Apple, not editable for now)
+- Email (shown but not editable)
+- "Preferencias alimentarias" → tappable, opens multiselect modal with dietary restrictions
+- "Cocinas favoritas" → tappable, opens multiselect modal with cuisine types
+- "Frecuencia" → single select
+- "Guardar cambios" button → calls updateProfile
+- Success toast on save
+
+2. FAVORITES SCREEN (src/app/profile/favorites.tsx):
+- Two tabs: "Restaurantes" | "Platos"
+- Restaurant favorites: cards with name, cuisine, rating, unfavorite button (heart icon)
+- Product favorites: cards with name, restaurant name, price, unfavorite button
+- Empty states for each tab
+- Swipe to unfavorite
+
+3. POINTS SCREEN (src/app/profile/points.tsx):
+- Header card: current balance prominently displayed, level badge (bronce, plata, oro)
+- "¿Cómo ganar puntos?" info section with icons:
+  - Completar onboarding: X pts
+  - Pedir comida: X pts
+  - Calificar restaurante: X pts
+  - Escribir reseña: X pts
+- History list below: chronological entries
+  - Earned: green "+50 pts" with reason
+  - Redeemed: red "-100 pts" with reason
+  - Each entry shows date and reference
+- Paginated with infinite scroll
+- Filter tabs: "Todos" | "Ganados" | "Canjeados"
+
+4. RESERVATIONS SCREEN (src/app/profile/reservations.tsx):
+- "Nueva reserva" button at top
+- Tabs: "Próximas" | "Pasadas"
+- Each reservation card: restaurant name, date, time, party size, status badge
+  - Pending: yellow
+  - Confirmed: green
+  - Cancelled/Rejected: red
+  - Completed: gray
+- Tappable for detail (simple modal with full info + special requests)
+- Cancel button on pending/confirmed reservations (with confirmation dialog)
+
+5. NEW RESERVATION SCREEN (src/app/reservations/new.tsx):
+- Restaurant selector (search + select from favorites or all)
+- Date picker (no past dates)
+- Time picker
+- Party size selector (1-20 with stepper)
+- Special requests text input
+- "Reservar" button
+- Success screen with reservation details
+
+6. RATE & REVIEW FLOW (src/app/rate.tsx):
+- Triggered after order is delivered (show prompt in order tracking screen)
+- Step 1: Rate each dish (1-5 stars per item) — show product name and image
+- Step 2: Optional review text for any rated dish
+- Step 3: Rate restaurant overall (1-5 stars)
+- "Enviar" button → calls rateDish for each, writeDishReview if text provided, rateRestaurant
+- Points earned toast after submission
+- Can skip entire flow
+
+7. NOTIFICATIONS SCREEN (src/app/notifications.tsx):
+- Bell icon in home header with unread count badge
+- List of notifications grouped by date (Hoy, Ayer, Esta semana, Antes)
+- Each notification: icon by type, title, body, time ago, unread indicator (blue dot)
+- Tapping marks as read and navigates to relevant screen:
+  - order_status → order detail
+  - payment → payment receipt
+  - reservation → reservations screen
+  - points → points screen
+  - promotion → promotions (placeholder)
+  - system → just mark as read
+- "Marcar todo como leído" button at top
+- Pull to refresh
+
+8. NOTIFICATION PREFERENCES (src/app/profile/notification-settings.tsx):
+- Toggle switches for each notification type:
+  - "Estado de pedidos" (order_status)
+  - "Pagos" (payment)
+  - "Reservas" (reservation)
+  - "Puntos y recompensas" (points)
+  - "Promociones" (promotion)
+  - "Sistema" (system)
+- Auto-save on toggle change
+- All default to ON
+
+9. SETTINGS SCREEN (src/app/profile/settings.tsx):
+- Language selector (Español default, English, Português)
+- Dark mode toggle
+- Font size selector (Pequeño, Normal, Grande)
+- "Notificaciones" → navigates to notification-settings
+- "Términos y condiciones" → link/webview
+- "Política de privacidad" → link/webview
+- "Eliminar mi cuenta" → confirmation dialog with warning, calls delete endpoint
+
+10. SUPPORT SCREEN (src/app/profile/support.tsx):
+- "Preguntas frecuentes" section with expandable items (hardcoded FAQs)
+- "Contactar soporte" button → opens email or in-app form
+- App version display at bottom
+
+UPDATE PROFILE TAB (src/app/(tabs)/profile.tsx):
+- Wire all row items to navigate to their respective screens:
+  - "Mis datos" → profile/edit
+  - "Métodos de pago" → placeholder screen with "Próximamente" message
+  - "Mis favoritos" → profile/favorites
+  - "Puntos y recompensas" → profile/points
+  - "Reservas" → profile/reservations
+  - "Configuración" → profile/settings
+  - "Soporte" → profile/support
+  - "Cerrar sesión" → logout flow
+
+UPDATE ORDER TRACKING:
+- After order status becomes 'delivered', show a bottom prompt: "¿Cómo estuvo tu comida?" with a star and "Calificar" button → navigates to rate screen
+
+ADD NOTIFICATION BELL:
+- Add bell icon to home screen header
+- Show unread count badge (red circle with number)
+- Tapping navigates to notifications screen
+- Poll for unread count every 30 seconds when app is active
+
+RULES:
+- All text in Spanish
+- Follow existing theme and component patterns
+- Loading states on all API calls
+- Error handling with Spanish messages
+- Register all new routes in _layout.tsx
+- Smooth transitions and animations

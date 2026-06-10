@@ -255,6 +255,25 @@ export default function OrderScreen() {
           </View>
         </View>
 
+        {order.status === "delivered" ? (
+          <View style={[styles.ratePrompt, { backgroundColor: colors.primary + "12", borderColor: colors.primary + "33" }]}>
+            <Feather name="star" size={22} color={colors.primary} />
+            <View style={styles.ratePromptText}>
+              <Text style={[styles.ratePromptTitle, { color: colors.foreground }]}>
+                ¿Qué te pareció?
+              </Text>
+              <Text style={[styles.ratePromptDesc, { color: colors.mutedForeground }]}>
+                Calificá tu pedido y ganá puntos.
+              </Text>
+            </View>
+            <Button
+              title="Calificar"
+              size="sm"
+              onPress={() => router.push(`/rate?orderId=${order.id}`)}
+            />
+          </View>
+        ) : null}
+
         <View style={styles.actions}>
           <Button title="Volver al menú" fullWidth size="lg" onPress={backToMenu} />
           <Pressable onPress={() => router.push("/(tabs)/orders")} style={styles.link}>
@@ -355,4 +374,17 @@ const styles = StyleSheet.create({
   actions: { width: "100%", marginTop: 28, gap: 8 },
   link: { alignSelf: "center", paddingVertical: 10 },
   linkText: { fontSize: 15, fontWeight: "600" },
+  ratePrompt: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 16,
+    marginTop: 24,
+  },
+  ratePromptText: { flex: 1 },
+  ratePromptTitle: { fontSize: 15, fontWeight: "700" },
+  ratePromptDesc: { fontSize: 13, marginTop: 2 },
 });

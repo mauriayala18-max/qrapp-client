@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   FlatList,
   Platform,
@@ -10,13 +10,16 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
 import { useAuthStore } from "@/stores/authStore";
 import { RestaurantCard } from "@/components/RestaurantCard";
 import { GuestModal } from "@/components/GuestModal";
+import { notificationService } from "@/services/notifications";
 import { Restaurant, Promotion } from "@/types";
+
+const UNREAD_POLL_MS = 30000;
 
 const PROMOTIONS: Promotion[] = [
   { id: "1", title: "2x1 en bebidas", restaurant: "La Paraguaya", discount: "2x1", color: "#FF6B35" },
@@ -41,6 +44,31 @@ export default function HomeScreen() {
   const isGuest = useAuthStore((s) => s.isGuest);
   const [guestModal, setGuestModal] = useState(false);
   const [guestMessage, setGuestMessage] = useState("");
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (isGuest) {
+        setUnreadCount(0);
+        return;
+      }
+      let active = true;
+      const fetchCount = async () => {
+        try {
+          const count = await notificationService.getUnreadCount();
+          if (active) setUnreadCount(count);
+        } catch {
+          // ignore polling errors
+        }
+      };
+      fetchCount();
+      const interval = setInterval(fetchCount, UNREAD_POLL_MS);
+      return () => {
+        active = false;
+        clearInterval(interval);
+      };
+    }, [isGuest]),
+  );
 
   const handleProtectedAction = (msg?: string) => {
     if (isGuest) {
@@ -98,17 +126,38 @@ export default function HomeScreen() {
             {isGuest ? "Invitado" : firstName}
           </Text>
         </View>
-        {!isGuest ? (
-          <View style={[styles.pointsBadge, { backgroundColor: colors.primary + "15" }]}>
-            <Feather name="award" size={14} color={colors.primary} />
-            <Text style={[styles.pointsValue, { color: colors.primary }]}>
-              {user?.points ?? 0}
-            </Text>
-            <Text style={[styles.pointsLabel, { color: colors.primary }]}>
-              pts
-            </Text>
-          </View>
-        ) : null}
+        <View style={styles.headerRight}>
+          {!isGuest ? (
+            <View style={[styles.pointsBadge, { backgroundColor: colors.primary + "15" }]}>
+              <Feather name="award" size={14} color={colors.primary} />
+              <Text style={[styles.pointsValue, { color: colors.primary }]}>
+                {user?.points ?? 0}
+              </Text>
+              <Text style={[styles.pointsLabel, { color: colors.primary }]}>
+                pts
+              </Text>
+            </View>
+          ) : null}
+          {!isGuest ? (
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push("/notifications");
+              }}
+              style={[styles.bellButton, { backgroundColor: colors.muted }]}
+              hitSlop={8}
+            >
+              <Feather name="bell" size={20} color={colors.foreground} />
+              {unreadCount > 0 ? (
+                <View style={[styles.bellBadge, { backgroundColor: colors.primary, borderColor: colors.background }]}>
+                  <Text style={styles.bellBadgeText}>
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </Text>
+                </View>
+              ) : null}
+            </Pressable>
+          ) : null}
+        </View>
       </View>
 
       <Pressable
@@ -222,6 +271,11 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: -0.5,
   },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
   pointsBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -229,6 +283,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
+  },
+  bellButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bellBadge: {
+    position: "absolute",
+    top: -2,
+    right: -2,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    paddingHorizontal: 4,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bellBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "700",
   },
   pointsValue: {
     fontSize: 16,
