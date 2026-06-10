@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
 import { useAuthStore } from "@/stores/authStore";
@@ -35,6 +36,7 @@ const RESTAURANTS: Restaurant[] = [
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const isGuest = useAuthStore((s) => s.isGuest);
   const [guestModal, setGuestModal] = useState(false);
@@ -51,6 +53,7 @@ export default function HomeScreen() {
 
   const handleQRScan = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push("/scanner");
   };
 
   const handlePromotion = (promo: Promotion) => {

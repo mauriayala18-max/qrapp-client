@@ -109,3 +109,115 @@ export interface Promotion {
   color: string;
   expires?: string;
 }
+
+export interface SessionParticipant {
+  id: string;
+  name: string;
+  is_host?: boolean;
+}
+
+export interface TableInfo {
+  id: string;
+  number: string | number;
+  capacity?: number;
+}
+
+export interface TimeSlot {
+  id: string;
+  name: string;
+  start_time?: string;
+  end_time?: string;
+  active?: boolean;
+}
+
+export interface Session {
+  id: string;
+  status: string;
+  table: TableInfo;
+  branch: Branch;
+  restaurant: Restaurant;
+  participants: SessionParticipant[];
+  current_time_slot?: TimeSlot;
+  created_at?: string;
+}
+
+export interface WaiterReason {
+  id: string;
+  label: string;
+}
+
+export interface MenuCategory {
+  id: string;
+  name: string;
+  display_order?: number;
+}
+
+export interface ModificationOption {
+  id: string;
+  name: string;
+  price: number;
+  available?: boolean;
+}
+
+export interface ModificationGroup {
+  id: string;
+  name: string;
+  required: boolean;
+  max_selections: number;
+  min_selections?: number;
+  options: ModificationOption[];
+}
+
+export interface MenuProduct {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  category_id: string;
+  category?: string;
+  image?: string;
+  available: boolean;
+  rating?: number;
+  reviews_count?: number;
+  prep_time_minutes?: number;
+  featured?: boolean;
+  keywords?: string[];
+  ingredients?: string[];
+  modification_groups?: ModificationGroup[];
+}
+
+export interface Menu {
+  categories: MenuCategory[];
+  products: MenuProduct[];
+  time_slots?: TimeSlot[];
+}
+
+export interface ProductReview {
+  id: string;
+  user_name: string;
+  rating: number;
+  comment?: string;
+  created_at: string;
+}
+
+export interface CartModification {
+  group_id: string;
+  group_name: string;
+  option_id: string;
+  option_name: string;
+  price: number;
+}
+
+export interface CartItem {
+  id: string;
+  product: MenuProduct;
+  quantity: number;
+  modifications: CartModification[];
+  notes?: string;
+  totalPrice: number;
+}
+
+export interface ScanResponse {
+  session: Session;
+  menu?: Menu;
+}

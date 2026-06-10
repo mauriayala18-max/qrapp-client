@@ -1,0 +1,109 @@
+Add QR scanning, table session, menu browsing, product detail, and search functionality to the existing QR App. Do NOT modify or recreate existing files unless adding imports or navigation links. Build on the existing project structure, stores, services, and theme.
+
+All API endpoints already exist in the backend at EXPO_PUBLIC_API_BASE_URL.
+
+NEW SERVICES TO ADD (src/services/):
+
+sessions.ts:
+- joinSession(token, platform, name?) → POST /api/v1/sessions/join
+- scanAndJoin(token, platform, name?) → POST /api/v1/sessions/scan (combined endpoint, returns everything)
+- getSession(sessionId) → GET /api/v1/sessions/:sessionId
+- callWaiter(sessionId, reasonId?, customReason?) → POST /api/v1/sessions/:sessionId/call-waiter
+
+menu.ts:
+- getMenu(branchId, params?) → GET /api/v1/branches/:branchId/menu
+- searchMenu(branchId, query) → GET /api/v1/branches/:branchId/menu/search
+- getFeatured(branchId) → GET /api/v1/branches/:branchId/menu/featured
+- getProduct(productId) → GET /api/v1/products/:productId
+- getProductReviews(productId, page) → GET /api/v1/products/:productId/reviews
+
+UPDATE ZUSTAND STORE (src/stores/sessionStore.ts):
+- State: session (active session info), participants, table info, branch/restaurant info, menu (categories + products), currentTimeSlot, orders
+- Actions: setSession, clearSession, addOrder, updateOrderStatus
+- Persist session across app navigation (not across app restarts)
+
+NEW SCREENS:
+
+1. QR SCANNER SCREEN (src/app/scanner.tsx):
+- Full screen camera view using expo-camera or expo-barcode-scanner
+- QR code detection
+- On scan: extract token from QR URL, call scanAndJoin endpoint
+- If user is authenticated: send with auth token
+- If guest on web-like flow: ask for name first (simple modal with text input "¿Cómo te llamamos?")
+- On success: store session in sessionStore, navigate to session/menu screen
+- Handle errors: invalid QR, expired session, etc. with Spanish messages
+- Back button to go home
+- Camera permission handling with friendly message if denied
+
+2. SESSION SCREEN (src/app/session/[sessionId].tsx):
+- Header: "Mesa {number} · {restaurant_name}"
+- Tab-like sections at top: "Menú" | "Pedidos" | "Cuenta"
+- Default view: Menú tab
+- Floating action button: "Llamar mozo" (opens bottom sheet with reason selection)
+- Show participants list as small avatars/names at the top
+- "Menú" tab content → renders the Menu component
+- "Pedidos" tab content → shows orders for this session (placeholder, built in next prompt)
+- "Cuenta" tab content → shows bill summary (placeholder, built in next prompt)
+
+3. MENU VIEW (component, rendered inside session screen):
+- Time slot indicator at top: current time slot highlighted (e.g., "Almuerzo" active), tappable to switch
+- Horizontal scrollable category chips/tabs
+- Product list below, filtered by selected category
+- Each product card: image (or colored placeholder with icon), name, description (truncated), price in Gs. (formatted with dots: "25.000 Gs."), rating stars, estimated prep time
+- Featured products marked with a small badge/ribbon
+- "Producto no disponible" overlay on unavailable items
+- Tapping a product → navigate to product detail
+
+4. PRODUCT DETAIL SCREEN (src/app/product/[productId].tsx):
+- Large image (or placeholder)
+- Product name, description, price
+- Rating: stars + number + "ver reseñas" link
+- Estimated prep time with icon
+- Ingredients/keywords as tags
+- Modification groups: each group shows as a section with title
+  - If required: show "(obligatorio)" label
+  - Radio buttons if max_selections = 1
+  - Checkboxes if max_selections > 1
+  - Each option shows name + additional price if > 0 ("+5.000 Gs.")
+- Quantity selector (- 1 +)
+- Notes field: "Alguna observación?" (optional text input)
+- "Agregar al pedido" button at bottom showing total (price * quantity + modifications)
+- Button adds item to local cart (cart store, created below)
+- If product is not available: show "No disponible" and disable add button
+
+5. SEARCH SCREEN (update existing src/app/(tabs)/search.tsx):
+- Search input with debounced API call (300ms)
+- While in active session: search within current branch menu (GET /branches/:branchId/menu/search?q=)
+- While not in session: search placeholder "Buscá restaurantes..." (for future)
+- Results show product cards same as menu view
+- Tapping result → product detail
+- Empty state: "No encontramos resultados para '{query}'"
+- Initial state: show popular/featured products if in session
+
+NEW STORE (src/stores/cartStore.ts):
+- State: items array [{ product, quantity, modifications, notes, totalPrice }], sessionId
+- Actions: addItem, removeItem, updateQuantity, clearCart, getTotal
+- Cart is tied to a session (clears when session changes)
+- Calculate item total: (product.price + sum of modification prices) * quantity
+
+CART INDICATOR:
+- Update the session screen header or add a floating cart button
+- Show badge with item count when cart has items
+- Tapping opens cart summary (placeholder screen for now, built in next prompt)
+
+UPDATE HOME SCREEN:
+- The "Escanear QR" button should now navigate to the scanner screen
+- The "Pedir anticipadamente" button remains as placeholder
+
+FORMATTING:
+- Prices formatted as Guaraníes: "25.000 Gs." (dot as thousands separator)
+- Time: "~15 min" for prep time
+- Ratings: show 1 decimal (4.5)
+
+RULES:
+- All text in Spanish
+- Follow existing theme/colors
+- Smooth animations (use React Native Reanimated if already installed, otherwise use Animated API)
+- Loading skeletons while fetching data
+- Pull-to-refresh on menu
+- Handle offline/error states gracefully

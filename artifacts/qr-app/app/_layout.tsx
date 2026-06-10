@@ -61,10 +61,15 @@ function RootLayoutNav() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false, animation: "none" }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(tabs)" />
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" options={{ animation: "none" }} />
+      <Stack.Screen name="(auth)" options={{ animation: "none" }} />
+      <Stack.Screen name="(tabs)" options={{ animation: "none" }} />
+      <Stack.Screen name="scanner" options={{ animation: "slide_from_bottom" }} />
+      <Stack.Screen name="session/[sessionId]" />
+      <Stack.Screen name="product/[productId]" />
+      <Stack.Screen name="reviews/[productId]" />
+      <Stack.Screen name="cart" options={{ animation: "slide_from_bottom" }} />
     </Stack>
   );
 }
