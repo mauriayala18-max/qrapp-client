@@ -2,6 +2,11 @@
  * Platform-aware secure storage.
  * Native: expo-secure-store (encrypted keychain/keystore)
  * Web: AsyncStorage (localStorage fallback — tokens are ephemeral on web)
+ *
+ * All operations are total: they never throw. A storage backend that is
+ * unavailable (e.g. expo-secure-store on web, where
+ * `deleteValueWithKeyAsync` is not implemented) resolves to a safe default
+ * instead of crashing callers such as checkAuth() or the 401 interceptor.
  */
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -32,20 +37,33 @@ async function getNativeStore(): Promise<typeof webStorage> {
   return _nativeStore;
 }
 
+async function getStore(): Promise<typeof webStorage> {
+  return Platform.OS === "web" ? webStorage : getNativeStore();
+}
+
 export const secureStorage = {
   async getItem(key: string): Promise<string | null> {
-    if (Platform.OS === "web") return webStorage.getItemAsync(key);
-    const store = await getNativeStore();
-    return store.getItemAsync(key);
+    try {
+      const store = await getStore();
+      return await store.getItemAsync(key);
+    } catch {
+      return null;
+    }
   },
   async setItem(key: string, value: string): Promise<void> {
-    if (Platform.OS === "web") return webStorage.setItemAsync(key, value);
-    const store = await getNativeStore();
-    return store.setItemAsync(key, value);
+    try {
+      const store = await getStore();
+      await store.setItemAsync(key, value);
+    } catch {
+      // Storage unavailable — ignore so callers never crash.
+    }
   },
   async deleteItem(key: string): Promise<void> {
-    if (Platform.OS === "web") return webStorage.deleteItemAsync(key);
-    const store = await getNativeStore();
-    return store.deleteItemAsync(key);
+    try {
+      const store = await getStore();
+      await store.deleteItemAsync(key);
+    } catch {
+      // Storage unavailable — ignore so callers never crash.
+    }
   },
 };
