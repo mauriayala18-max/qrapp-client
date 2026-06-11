@@ -1,1 +1,1 @@
-- [QR App (Expo) conventions & constraints](qr-app-notes.md) — no src/ prefix, @/ root alias, #FF6B35 theme, Spanish UI; OrderItem has no order_item_id so dish ratings reuse product_id.
+- [QR App (Expo) conventions & constraints](qr-app-notes.md) — no `src/` prefix, `@/` root alias, Spanish (Paraguay) UI, #FF6B35 theme; external backend, endpoints can't be tested locally.
