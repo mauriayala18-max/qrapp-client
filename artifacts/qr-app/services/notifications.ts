@@ -64,8 +64,12 @@ export const notificationService = {
   },
 
   getUnreadCount: async (): Promise<number> => {
+    // Background poll — a 401 here must NOT clear the session.
+    // The notification badge is cosmetic; a freshly-issued token is still valid
+    // even if this specific endpoint returns 401 (not yet deployed, permissions, etc.).
     const res = await api.get<{ count?: number; unread?: number }>(
       "/api/v1/notifications/unread-count",
+      { _skipAuthError: true },
     );
     return Number(res.data?.count ?? res.data?.unread ?? 0);
   },
