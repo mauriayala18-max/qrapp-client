@@ -1,6 +1,11 @@
 import { create } from "zustand";
 import { authService } from "@/services/auth";
-import { RegisterData, UpdateProfileData, User } from "@/types";
+import {
+  RegisterData,
+  SocialProvider,
+  UpdateProfileData,
+  User,
+} from "@/types";
 import { TOKEN_KEY } from "@/constants/config";
 import { secureStorage } from "@/utils/secureStorage";
 
@@ -16,6 +21,7 @@ interface AuthState {
     password: string,
   ) => Promise<{ needsTerms?: boolean }>;
   register: (data: RegisterData) => Promise<void>;
+  socialLogin: (provider: SocialProvider, token?: string) => Promise<void>;
   logout: () => Promise<void>;
   setGuest: () => void;
   checkAuth: () => Promise<void>;
@@ -65,7 +71,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   register: async (data) => {
-    const response = await authService.register(data);
+    let response = await authService.register(data);
+    // Some backends register without returning a session token. In that case
+    // log the user in immediately so registration always lands authenticated.
+    if (!response.token) {
+      response = await authService.login(data.email, data.password);
+    }
     await secureStorage.setItem(TOKEN_KEY, response.token);
     set({
       user: response.user,
@@ -73,6 +84,18 @@ export const useAuthStore = create<AuthState>((set) => ({
       isAuthenticated: true,
       isGuest: false,
       isNewUser: true,
+    });
+  },
+
+  socialLogin: async (provider, token) => {
+    const response = await authService.social(provider, token);
+    await secureStorage.setItem(TOKEN_KEY, response.token);
+    set({
+      user: response.user,
+      token: response.token,
+      isAuthenticated: true,
+      isGuest: false,
+      isNewUser: !!response.is_new_user,
     });
   },
 

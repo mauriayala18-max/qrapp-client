@@ -11,13 +11,14 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/Toast";
 import { useToast } from "@/hooks/useToast";
+import { useAuthStore } from "@/stores/authStore";
 import { useSessionStore } from "@/stores/sessionStore";
 import { reservationService } from "@/services/reservations";
 import { getErrorMessage } from "@/services/api";
@@ -60,8 +61,20 @@ export default function NewReservationScreen() {
   const { toast, showToast } = useToast();
 
   const session = useSessionStore((s) => s.session);
-  const restaurant = session?.restaurant;
-  const branchId = session?.branch?.id;
+  const params = useLocalSearchParams<{
+    branchId?: string;
+    restaurantId?: string;
+    restaurantName?: string;
+  }>();
+
+  // Prefer an active session; otherwise fall back to params from a
+  // restaurant profile so the reservation pre-selects that restaurant.
+  const branchId = session?.branch?.id ?? params.branchId ?? undefined;
+  const restaurant =
+    session?.restaurant ??
+    (params.restaurantName || params.restaurantId
+      ? { id: params.restaurantId ?? "", name: params.restaurantName ?? "Restaurante" }
+      : undefined);
 
   const days = useMemo(() => buildDays(14), []);
   const [date, setDate] = useState<string>(days[0]?.iso ?? "");

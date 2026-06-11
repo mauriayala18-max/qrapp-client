@@ -1,0 +1,76 @@
+Fix bugs and improve UX in the QR App. Do NOT recreate existing files — only modify what's needed.
+
+BUG 1: AUTO-LOGIN AFTER REGISTRATION
+After successful registration, the app redirects to the login screen instead of automatically logging in. Fix the register flow so that after creating the account, the user is automatically authenticated and navigated to the onboarding screen without needing to log in manually.
+
+BUG 2: SEARCH SCREEN COMPLETE REDESIGN
+Remove the "Escaneá una mesa" message entirely. The search screen should always work, whether in a session or not.
+
+New layout:
+- Search bar at top: placeholder "Buscar restaurante o plato..."
+- Searches BOTH restaurants by name AND products/dishes by name across all branches
+- Below search bar: horizontal scrollable cuisine type filter chips (Japonesa, China, Americana, Paraguaya, Italiana, etc). User can select MULTIPLE chips to filter. Selected chips highlighted in primary color.
+- Below chips: dietary restriction filter chips (Celíaco, Vegetariano, Vegano, etc) also multi-select
+- Results section: show matching restaurants and/or dishes
+  - Restaurant results: card with name, cuisine type, rating, address. Tapping → restaurant profile
+  - Dish results: card with dish name, restaurant name, price, rating. Tapping → restaurant profile with menu
+- When IN a session, add a "Buscar en el menú de esta mesa" section at the top that searches the current branch menu
+- Empty state: "No encontramos resultados"
+- Initial state (no search): show cuisine type categories as tappable cards/grid
+
+BUG 3: RESTAURANT PROFILE SCREEN
+Create a new screen: src/app/restaurant/[branchId].tsx
+- Restaurant name, photos (or placeholder), overall rating, address, phone
+- Operation hours (from branch_hours)
+- "Ver menú" button → shows menu in read-only mode (no add-to-cart since not at a table)
+- "Reservar" button → navigates to new reservation screen with this restaurant pre-selected
+- "Cómo llegar" button → opens maps with coordinates
+- If user has points and restaurant has promotions redeemable with points, show: "Tenés X puntos canjeables en este restaurante" with available rewards
+- Active promotions section
+- Banking benefits section
+- Reviews section
+
+BUG 4: HOME SCREEN REDESIGN
+The home screen needs to be more complete and useful. New layout top to bottom:
+
+a) Header: "Hola, {name}" + notification bell with unread badge (already exists)
+
+b) "Escanear QR" prominent button (already exists)
+
+c) "Pedir anticipadamente" button (already exists)
+
+d) "Mis puntos" card: show current balance prominently (e.g., "150 puntos"), level badge. Tapping → points screen. Fetch from GET /api/v1/points/balance.
+
+e) "Próxima reserva" card: if user has an upcoming confirmed/pending reservation, show it with restaurant name, date, time, party size, and a countdown (e.g., "En 2 días", "En 5 horas", "Hoy a las 20:30"). Tapping → reservation detail. If no upcoming reservations, show "Reservar mesa" button that navigates to new reservation screen. Fetch from GET /api/v1/reservations/mine?upcoming=true.
+
+f) "Mis favoritos" horizontal scrollable section: show favorite restaurants as small cards. Tapping → restaurant profile. "Ver todos" link → favorites screen. If no favorites: "Agregá restaurantes a tus favoritos".
+
+g) "Promociones destacadas" section: connect to real API or show empty state. Tapping a promo → restaurant profile.
+
+h) "Restaurantes cerca tuyo" section: connect to real API or show empty state. Each card navigates to restaurant profile.
+
+BUG 5: SOCIAL LOGIN BUTTONS
+Add to login screen:
+- "Continuar con Google" button with Google icon
+- "Continuar con Apple" button with Apple icon (show only on iOS/web)
+- These call POST /api/v1/auth/social with the appropriate provider
+- If social login fails, show toast: "Login social no disponible todavía"
+
+BUG 6: GUEST MODE NAVIGATION
+When "Continuar como invitado":
+- Can browse home, search restaurants, view restaurant profiles and menus
+- When trying to order, reserve, rate, see points, see orders → show modal: "Iniciá sesión para continuar" with "Registrarte" and "Iniciar sesión" buttons
+
+BUG 7: RESERVATIONS ACCESSIBLE FROM TAB BAR OR HOME
+Reservations should NOT be hidden inside the profile. Options:
+- Add a floating "Reservar" button on the home screen (prominent, secondary to QR scan)
+- The "Próxima reserva" card on home gives quick access
+- In the profile screen, move "Reservas" to the top of the list
+- Consider: on the restaurant profile screen, the "Reservar" button should be prominent
+
+RULES:
+- All text in Spanish
+- Follow existing patterns and theme
+- Don't break existing functionality
+- Loading states where needed
+- All new screens registered in _layout.tsx

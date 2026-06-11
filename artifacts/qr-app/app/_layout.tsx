@@ -77,6 +77,7 @@ function RootLayoutNav() {
         <Stack.Screen name="scanner" options={{ animation: "slide_from_bottom" }} />
         <Stack.Screen name="session/[sessionId]" />
         <Stack.Screen name="product/[productId]" />
+        <Stack.Screen name="restaurant/[branchId]" />
         <Stack.Screen name="reviews/[productId]" />
         <Stack.Screen name="cart" options={{ animation: "slide_from_bottom" }} />
         <Stack.Screen name="order/[orderId]" />

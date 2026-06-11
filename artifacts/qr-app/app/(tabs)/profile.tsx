@@ -57,11 +57,11 @@ export default function ProfileScreen() {
   };
 
   const menuItems: MenuItem[] = [
+    { icon: "calendar", label: "Reservas", onPress: () => router.push("/profile/reservations") },
     { icon: "user", label: "Mis datos", onPress: () => router.push("/profile/edit") },
     { icon: "credit-card", label: "Métodos de pago", onPress: () => router.push("/profile/payment-methods") },
     { icon: "heart", label: "Mis favoritos", onPress: () => router.push("/profile/favorites") },
     { icon: "award", label: "Puntos y recompensas", onPress: () => router.push("/profile/points") },
-    { icon: "calendar", label: "Reservas", onPress: () => router.push("/profile/reservations") },
     { icon: "settings", label: "Configuración", onPress: () => router.push("/profile/settings") },
     { icon: "help-circle", label: "Soporte", onPress: () => router.push("/profile/support") },
     { icon: "log-out", label: "Cerrar sesión", onPress: handleLogout, destructive: true },

@@ -87,6 +87,7 @@ export interface LoginResponse {
   token: string;
   user: User;
   needs_terms_acceptance?: boolean;
+  is_new_user?: boolean;
 }
 
 export interface RegisterData {
@@ -110,6 +111,80 @@ export interface Promotion {
   discount: string;
   color: string;
   expires?: string;
+  branch_id?: string;
+  restaurant_id?: string;
+}
+
+export type SocialProvider = "google" | "apple";
+
+export interface RestaurantSearchResult {
+  id: string;
+  restaurant_id?: string;
+  name: string;
+  cuisine_type: string;
+  rating: number;
+  address?: string;
+  logo?: string;
+  color?: string;
+}
+
+export interface DishSearchResult {
+  id: string;
+  name: string;
+  price: number;
+  rating?: number;
+  image?: string;
+  restaurant_name?: string;
+  branch_id?: string;
+  restaurant_id?: string;
+}
+
+export interface SearchResults {
+  restaurants: RestaurantSearchResult[];
+  dishes: DishSearchResult[];
+}
+
+export interface BranchHour {
+  day: string;
+  open?: string;
+  close?: string;
+  closed?: boolean;
+}
+
+export interface RestaurantPromotion {
+  id: string;
+  title: string;
+  description?: string;
+  discount?: string;
+  points_required?: number;
+  expires?: string;
+}
+
+export interface BranchReview {
+  id: string;
+  user_name: string;
+  rating: number;
+  comment?: string;
+  created_at: string;
+}
+
+export interface BranchProfile {
+  id: string;
+  restaurant_id?: string;
+  name: string;
+  cuisine_type?: string;
+  description?: string;
+  address?: string;
+  phone?: string;
+  latitude?: number;
+  longitude?: number;
+  rating?: number;
+  reviews_count?: number;
+  logo?: string;
+  cover_image?: string;
+  color?: string;
+  hours?: BranchHour[];
+  photos?: string[];
 }
 
 export interface SessionParticipant {

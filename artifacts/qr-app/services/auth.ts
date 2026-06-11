@@ -1,5 +1,11 @@
 import { api } from "./api";
-import { LoginResponse, RegisterData, UpdateProfileData, User } from "@/types";
+import {
+  LoginResponse,
+  RegisterData,
+  SocialProvider,
+  UpdateProfileData,
+  User,
+} from "@/types";
 
 export const authService = {
   login: async (
@@ -18,6 +24,17 @@ export const authService = {
       "/api/v1/auth/register",
       data,
     );
+    return response.data;
+  },
+
+  social: async (
+    provider: SocialProvider,
+    token?: string,
+  ): Promise<LoginResponse> => {
+    const response = await api.post<LoginResponse>("/api/v1/auth/social", {
+      provider,
+      token,
+    });
     return response.data;
   },
 

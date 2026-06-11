@@ -19,6 +19,8 @@ import { RatingInput } from "@/components/RatingInput";
 import { Button } from "@/components/ui/Button";
 import { Toast } from "@/components/Toast";
 import { useToast } from "@/hooks/useToast";
+import { GuestModal } from "@/components/GuestModal";
+import { useAuthStore } from "@/stores/authStore";
 import { useSessionStore } from "@/stores/sessionStore";
 import { orderService } from "@/services/orders";
 import { ratingService } from "@/services/ratings";
@@ -39,6 +41,7 @@ export default function RateScreen() {
   const { toast, showToast } = useToast();
   const { orderId } = useLocalSearchParams<{ orderId?: string }>();
 
+  const isGuest = useAuthStore((s) => s.isGuest);
   const session = useSessionStore((s) => s.session);
 
   const [order, setOrder] = useState<Order | null>(null);
@@ -129,6 +132,22 @@ export default function RateScreen() {
       setSubmitting(false);
     }
   };
+
+  if (isGuest) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <ScreenHeader title="Calificar" />
+        <GuestModal
+          visible
+          onClose={() => {
+            if (router.canGoBack()) router.back();
+            else router.replace("/(tabs)");
+          }}
+          message="Iniciá sesión para calificar tu experiencia"
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

@@ -9,8 +9,11 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useColors } from "@/hooks/useColors";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { GuestModal } from "@/components/GuestModal";
+import { useAuthStore } from "@/stores/authStore";
 import { Button } from "@/components/ui/Button";
 import {
   PointsBalance,
@@ -39,6 +42,8 @@ const LEVEL_META: Record<string, { label: string; color: string }> = {
 export default function PointsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const isGuest = useAuthStore((s) => s.isGuest);
 
   const [balance, setBalance] = useState<PointsBalance | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
@@ -72,8 +77,9 @@ export default function PointsScreen() {
   }, []);
 
   useEffect(() => {
+    if (isGuest) return;
     loadAll(filter);
-  }, [filter, loadAll]);
+  }, [filter, loadAll, isGuest]);
 
   const loadMore = async () => {
     if (loadingMore || !hasMore) return;
@@ -107,6 +113,22 @@ export default function PointsScreen() {
         color: "#CD7F32",
       }
     : null;
+
+  if (isGuest) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <ScreenHeader title="Puntos y recompensas" />
+        <GuestModal
+          visible
+          onClose={() => {
+            if (router.canGoBack()) router.back();
+            else router.replace("/(tabs)");
+          }}
+          message="Iniciá sesión para ver tus puntos y recompensas"
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

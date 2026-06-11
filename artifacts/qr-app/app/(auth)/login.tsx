@@ -13,24 +13,49 @@ import {
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Feather } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 import { useAuthStore } from "@/stores/authStore";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Toast } from "@/components/Toast";
+import { useToast } from "@/hooks/useToast";
 import { getErrorMessage } from "@/services/api";
+import { SocialProvider } from "@/types";
 
 export default function LoginScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
+  const socialLogin = useAuthStore((s) => s.socialLogin);
   const setGuest = useAuthStore((s) => s.setGuest);
+  const { toast, showToast } = useToast();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState<SocialProvider | null>(
+    null,
+  );
   const [error, setError] = useState("");
   const [termsModal, setTermsModal] = useState(false);
+
+  const showApple = Platform.OS === "ios" || Platform.OS === "web";
+
+  const handleSocial = async (provider: SocialProvider) => {
+    setError("");
+    setSocialLoading(provider);
+    try {
+      await socialLogin(provider);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      showToast("Login social no disponible todavía", "error");
+    } finally {
+      setSocialLoading(null);
+    }
+  };
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -72,6 +97,11 @@ export default function LoginScreen() {
       style={{ flex: 1, backgroundColor: colors.background }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
+      <Toast
+        visible={!!toast}
+        message={toast?.message ?? ""}
+        type={toast?.type}
+      />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
@@ -132,6 +162,53 @@ export default function LoginScreen() {
             size="lg"
             style={{ marginTop: 8 }}
           />
+
+          <View style={styles.socialDivider}>
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+            <Text style={[styles.dividerText, { color: colors.mutedForeground }]}>
+              o continuá con
+            </Text>
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+          </View>
+
+          <View style={styles.socialRow}>
+            <Pressable
+              onPress={() => handleSocial("google")}
+              disabled={socialLoading !== null}
+              style={({ pressed }) => [
+                styles.socialButton,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  opacity: pressed || socialLoading !== null ? 0.7 : 1,
+                },
+              ]}
+            >
+              <Feather name="chrome" size={18} color={colors.foreground} />
+              <Text style={[styles.socialText, { color: colors.foreground }]}>
+                {socialLoading === "google" ? "Conectando…" : "Google"}
+              </Text>
+            </Pressable>
+            {showApple ? (
+              <Pressable
+                onPress={() => handleSocial("apple")}
+                disabled={socialLoading !== null}
+                style={({ pressed }) => [
+                  styles.socialButton,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                    opacity: pressed || socialLoading !== null ? 0.7 : 1,
+                  },
+                ]}
+              >
+                <Feather name="command" size={18} color={colors.foreground} />
+                <Text style={[styles.socialText, { color: colors.foreground }]}>
+                  {socialLoading === "apple" ? "Conectando…" : "Apple"}
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
         </View>
 
         <View style={styles.footer}>
@@ -217,6 +294,31 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: 16,
+  },
+  socialDivider: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+    gap: 12,
+    marginTop: 4,
+  },
+  socialRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  socialButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  socialText: {
+    fontSize: 15,
+    fontWeight: "600",
   },
   errorBox: {
     borderRadius: 8,
