@@ -15,6 +15,11 @@ description: Non-obvious structure, theming, and data-model constraints for the 
 **Why:** The notification unread-count poll fires immediately after login. If the backend returns 401 for that endpoint (not yet deployed, missing permissions, etc.), the old interceptor cleared the token and called logout — bouncing the user back to the login screen right after a successful login.
 **How to apply:** Any new background/non-auth-critical API call should pass `{ _skipAuthError: true }`. Auth-critical screens (profile data, order submission, etc.) should keep default behavior (logout on 401).
 
+## SafeAreaView belongs at the root layout, not per-screen
+**Rule:** Wrap the entire navigation in a `SafeAreaView` in `app/_layout.tsx` (inside `RootLayoutNav`), not scattered across individual screens. Use `<StatusBar style="dark" />` from `expo-status-bar` at the same level for consistent dark-content on light backgrounds.
+**Why:** content overlapping the system status bar was a common visual bug across screens because no global SafeAreaView existed. Fixing it screen-by-screen would be fragile and easy to miss when adding new routes.
+**How to apply:** keep `SafeAreaProvider` at the root in `RootLayout` (it still sets up context for `useSafeAreaInsets` deeper in the tree), but add the actual `SafeAreaView` wrapper around the `Stack` router in `RootLayoutNav`.
+
 ## expo-secure-store is not supported on web → secureStorage must never throw
 **Rule:** `utils/secureStorage.ts` is the only place that may touch `expo-secure-store`, and every op (getItem/setItem/deleteItem) must (a) route `Platform.OS === "web"` to AsyncStorage and (b) be wrapped so it can never throw (return null/void on failure).
 **Why:** on web, expo-secure-store's native methods are undefined (`ExpoSecureStore.default.deleteValueWithKeyAsync is not a function`). The throw was uncaught because storage is called from `checkAuth()`'s catch block and from the 401 interceptor in `services/api.ts` (the latter now fired by the home-screen unread-count poll) → app crash via ErrorBoundary/redbox.

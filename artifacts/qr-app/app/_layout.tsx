@@ -11,7 +11,9 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
+import { StyleSheet } from "react-native";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import LoadingScreen from "@/components/LoadingScreen";
@@ -57,37 +59,45 @@ function RootLayoutNav() {
   }, [isAuthenticated, isGuest, isLoading, isNewUser]);
 
   if (isLoading) {
-    return <LoadingScreen />;
+    return (
+      <SafeAreaView style={styles.root}>
+        <StatusBar style="dark" />
+        <LoadingScreen />
+      </SafeAreaView>
+    );
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" options={{ animation: "none" }} />
-      <Stack.Screen name="(auth)" options={{ animation: "none" }} />
-      <Stack.Screen name="(tabs)" options={{ animation: "none" }} />
-      <Stack.Screen name="scanner" options={{ animation: "slide_from_bottom" }} />
-      <Stack.Screen name="session/[sessionId]" />
-      <Stack.Screen name="product/[productId]" />
-      <Stack.Screen name="reviews/[productId]" />
-      <Stack.Screen name="cart" options={{ animation: "slide_from_bottom" }} />
-      <Stack.Screen name="order/[orderId]" />
-      <Stack.Screen name="profile/edit" />
-      <Stack.Screen name="profile/payment-methods" />
-      <Stack.Screen name="profile/favorites" />
-      <Stack.Screen name="profile/points" />
-      <Stack.Screen name="profile/reservations" />
-      <Stack.Screen name="profile/settings" />
-      <Stack.Screen name="profile/notification-settings" />
-      <Stack.Screen name="profile/support" />
-      <Stack.Screen name="reservations/new" options={{ animation: "slide_from_bottom" }} />
-      <Stack.Screen name="rate" options={{ animation: "slide_from_bottom" }} />
-      <Stack.Screen name="notifications" />
-      <Stack.Screen name="split" options={{ animation: "slide_from_bottom" }} />
-      <Stack.Screen
-        name="payment-success"
-        options={{ animation: "slide_from_bottom", gestureEnabled: false }}
-      />
-    </Stack>
+    <SafeAreaView style={styles.root}>
+      <StatusBar style="dark" />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" options={{ animation: "none" }} />
+        <Stack.Screen name="(auth)" options={{ animation: "none" }} />
+        <Stack.Screen name="(tabs)" options={{ animation: "none" }} />
+        <Stack.Screen name="scanner" options={{ animation: "slide_from_bottom" }} />
+        <Stack.Screen name="session/[sessionId]" />
+        <Stack.Screen name="product/[productId]" />
+        <Stack.Screen name="reviews/[productId]" />
+        <Stack.Screen name="cart" options={{ animation: "slide_from_bottom" }} />
+        <Stack.Screen name="order/[orderId]" />
+        <Stack.Screen name="profile/edit" />
+        <Stack.Screen name="profile/payment-methods" />
+        <Stack.Screen name="profile/favorites" />
+        <Stack.Screen name="profile/points" />
+        <Stack.Screen name="profile/reservations" />
+        <Stack.Screen name="profile/settings" />
+        <Stack.Screen name="profile/notification-settings" />
+        <Stack.Screen name="profile/support" />
+        <Stack.Screen name="reservations/new" options={{ animation: "slide_from_bottom" }} />
+        <Stack.Screen name="rate" options={{ animation: "slide_from_bottom" }} />
+        <Stack.Screen name="notifications" />
+        <Stack.Screen name="split" options={{ animation: "slide_from_bottom" }} />
+        <Stack.Screen
+          name="payment-success"
+          options={{ animation: "slide_from_bottom", gestureEnabled: false }}
+        />
+      </Stack>
+    </SafeAreaView>
   );
 }
 
@@ -127,3 +137,10 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+});
+
