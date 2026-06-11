@@ -84,8 +84,9 @@ export default function RateScreen() {
   }, [orderId]);
 
   useEffect(() => {
+    if (isGuest) return;
     load();
-  }, [load]);
+  }, [load, isGuest]);
 
   const setDish = (productId: string, patch: Partial<DishState>) => {
     setDishes((prev) =>
